@@ -17,3 +17,6 @@ yarn-error.*
 .env*.local
 *.tsbuildinfo
 .env
+android/
+ios/
+eas.json

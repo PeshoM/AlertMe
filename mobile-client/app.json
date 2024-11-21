@@ -12,19 +12,35 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "entitlements": {
+        "aps-environment": "production"
+      },
+      "supportsTablet": true,
+      "bundleIdentifier": "com.peshom.mobileclient"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.peshom.mobileclient"
+      "package": "com.peshom.mobileclient",
+      "googleServicesFile": "./android/app/google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-secure-store"],
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ]
+    ],
+
     "extra": {
       "eas": {
         "projectId": "d6c7d26c-0e25-45d4-b37e-d401804c4fbc"
