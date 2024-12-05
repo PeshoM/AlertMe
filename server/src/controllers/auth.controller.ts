@@ -2,9 +2,11 @@ import express from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { User } from "../schemas/users.schema";
 import { IUser } from "../models/user.interface";
+import { Device } from "../schemas/devices.schema";
+import { IDevice } from "../models/device.interface";
 
 const register = async (req: express.Request, res: express.Response) => {
-  const { username, email, password } = req.body;
+  const { username, email, password, fcmToken } = req.body;
 
   const used: IUser | null = await User.findOne({
     $or: [{ username }, { email }],
@@ -20,10 +22,26 @@ const register = async (req: express.Request, res: express.Response) => {
     return;
   }
 
+  let currDevice: IDevice | null = await Device.findOne({ fcmToken });
+
+  if (!currDevice) {
+    const device = new Device<IDevice>({
+      fcmToken,
+    });
+    await device.save();
+  }
+
+  let devices: string[] = [];
+  devices.push(fcmToken);
+
   const user = new User<IUser>({
     username,
     email,
     password,
+    friends: [],
+    receivedFriendRequests: [],
+    sentFriendRequests: [],
+    devices,
   });
 
   const auth_token: string = jwt.sign(
@@ -39,7 +57,7 @@ const register = async (req: express.Request, res: express.Response) => {
 };
 
 const login = async (req: express.Request, res: express.Response) => {
-  const { username, password } = req.body;
+  const { username, password, fcmToken } = req.body;
 
   const user: IUser | null = await User.findOne({ username });
 
@@ -53,6 +71,21 @@ const login = async (req: express.Request, res: express.Response) => {
   if (!isPasswordValid) {
     res.status(403).json({ message: "Invalid password" });
     return;
+  }
+
+  let currDevice: IDevice | null = await Device.findOne({ fcmToken });
+
+  if (!currDevice) {
+    const device = new Device<IDevice>({
+      fcmToken,
+    });
+    await device.save();
+  }
+
+  if (!user.devices.includes(fcmToken)) {
+    user.devices.push(fcmToken);
+
+    await user.save();
   }
 
   const auth_token = jwt.sign(
@@ -70,7 +103,7 @@ const getAuthenticatedUser = async (
   req: express.Request,
   res: express.Response
 ) => {
-  const { token } = req.body;
+  const { token, fcmToken } = req.body;
   const secretKey: string = process.env.JWT_SECRET_KEY || "";
 
   if (!token || !secretKey) {
