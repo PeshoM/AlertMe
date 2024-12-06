@@ -3,6 +3,7 @@ import cors from "cors";
 import * as dotenv from "dotenv";
 import mongoose from "mongoose";
 import authRouter from "./routes/auth.route";
+import friendsRouter from "./routes/friends.route";
 
 dotenv.config();
 
@@ -13,6 +14,7 @@ app.use(express.json());
 app.use(cors({ origin: "*" }));
 
 app.use(authRouter);
+app.use(friendsRouter);
 
 process.env.DATA_CONNECTION &&
   mongoose
