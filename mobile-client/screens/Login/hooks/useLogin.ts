@@ -5,6 +5,7 @@ import * as SecureStore from "expo-secure-store";
 import { LoginScreenProps } from "../../../types/screen.props";
 import { UserContext } from "../../../Context";
 import { useFocusEffect } from "@react-navigation/native";
+import { useFcmToken } from "../../../useFcmToken";
 
 const useLogin = ({ navigation }: LoginScreenProps) => {
   const [username, setUsername] = useState<string>("");
@@ -17,7 +18,8 @@ const useLogin = ({ navigation }: LoginScreenProps) => {
     Array(2).fill("")
   );
   const [error, setError] = useState("");
-  const { authenticatedUser, setAuthenticatedUser } = useContext(UserContext);
+  const { setAuthenticatedUser } = useContext(UserContext);
+  const { fcmToken } = useFcmToken();
   const loginData = [
     {
       name: "Username",
@@ -100,7 +102,7 @@ const useLogin = ({ navigation }: LoginScreenProps) => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ username, password, fcmToken }),
     });
 
     const result = await response.json();

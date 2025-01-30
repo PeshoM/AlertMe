@@ -6,8 +6,10 @@ import { User } from "../schemas/users.schema";
 const sendNotification = async (
   title: string,
   body: string,
-  fcmToken: string
+  fcmToken: string,
+  screen: string
 ) => {
+  console.log("sent");
   const message: admin.messaging.TokenMessage = {
     token: fcmToken,
     notification: {
@@ -15,13 +17,10 @@ const sendNotification = async (
       body,
     },
     data: {
-      screen: "FriendRequests",
+      screen,
     },
     android: {
       priority: "high",
-      notification: {
-        clickAction: "OPEN_NOTIFICATION",
-      },
     },
     apns: {
       payload: {
@@ -74,10 +73,11 @@ const sendFriendRequest = async (
   }
 
   const title: string = "New Friend Request",
-    body: string = `${currUser?.username} has sent you a friend request!`;
+    body: string = `${currUser?.username} has sent you a friend request!`,
+    screen: string = "receivedFriendRequests";
 
   userToRequest?.devices.map((fcmToken: string) => {
-    sendNotification(title, body, fcmToken);
+    sendNotification(title, body, fcmToken, screen);
   });
 
   res.status(200).json({ message: "Sucess" });
@@ -116,10 +116,11 @@ const acceptFriendRequest = async (
   await userSending.save();
 
   const title: string = "AlertMe",
-    body: string = `${currUser?.username} has accepted your friend request!`;
+    body: string = `${currUser?.username} has accepted your friend request!`,
+    screen: string = "Friends";
 
   userSending?.devices.map((fcmToken: string) => {
-    sendNotification(title, body, fcmToken);
+    sendNotification(title, body, fcmToken, screen);
   });
 
   res.status(200).json({ message: "Sucess" });
@@ -154,4 +155,54 @@ const rejectFriendRequest = async (
   res.status(200).json({ message: "Sucess" });
 };
 
-export default { sendFriendRequest, acceptFriendRequest, rejectFriendRequest };
+const fetchFriends = async (req: express.Request, res: express.Response) => {
+  const { userId } = req.body;
+
+  const user: IUser | null = await User.findById(userId);
+
+  if (!user) {
+    res.json({ message: "Invalid data" });
+    return;
+  }
+
+  const pipeline = [
+    {
+      $match: { _id: user._id },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "friends",
+        foreignField: "_id",
+        as: "friendsList",
+      },
+    },
+  ];
+
+  const [result]: IUser[] = await User.aggregate(pipeline).exec();
+
+  res.json({
+    message: "success",
+    friendsList: result.friendsList,
+  });
+};
+
+const searchUsers = async (req: express.Request, res: express.Response) => {
+  const { input } = req.body;
+
+  const escapedInput = input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  const results = await User.find({
+    username: { $regex: `^${escapedInput}`, $options: "i" },
+  });
+
+  res.json({ message: "success", results });
+};
+
+export default {
+  sendFriendRequest,
+  acceptFriendRequest,
+  rejectFriendRequest,
+  fetchFriends,
+  searchUsers,
+};

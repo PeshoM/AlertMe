@@ -40,7 +40,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             <View style={styles.logoContainer}>
               <Image
                 style={styles.logoImage}
-                source={require("../../assets/images/logo.png")}
+                source={require("../../assets/images/alertMeLogo2.png")}
               />
 
               <Text style={styles.logoText}>AlertMe</Text>
@@ -49,7 +49,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               <Text style={styles.title}>Sign In</Text>
               <View style={styles.fieldsDataContainer}>
                 {loginData.map((field, idx: number) => (
-                  <View>
+                  <View key={field.name}>
                     <View style={styles.fieldWrapper}>
                       <Text
                         style={[
