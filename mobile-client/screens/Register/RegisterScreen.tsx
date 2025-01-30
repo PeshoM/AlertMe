@@ -28,6 +28,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
     handleCloseErrorModal,
     handleNavigateSignIn,
   } = useRegister({ navigation });
+
   return (
     <SafeAreaView style={styles.rootContainer}>
       <KeyboardAvoidingView

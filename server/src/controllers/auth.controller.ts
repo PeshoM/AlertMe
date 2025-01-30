@@ -8,8 +8,6 @@ import { IDevice } from "../models/device.interface";
 const register = async (req: express.Request, res: express.Response) => {
   const { username, email, password, fcmToken } = req.body;
 
-  console.log("handled here");
-
   const used: IUser | null = await User.findOne({
     $or: [{ username }, { email }],
   });

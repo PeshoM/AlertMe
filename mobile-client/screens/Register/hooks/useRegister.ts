@@ -5,7 +5,6 @@ import * as SecureStore from "expo-secure-store";
 import { RegisterScreenProps } from "../../../types/screen.props";
 import { UserContext } from "../../../Context";
 import { useFocusEffect } from "@react-navigation/native";
-import { useFcmToken } from "../../../useFcmToken";
 
 const useRegister = ({ navigation }: RegisterScreenProps) => {
   const [username, setUsername] = useState<string>("");
@@ -22,7 +21,6 @@ const useRegister = ({ navigation }: RegisterScreenProps) => {
   );
   const [error, setError] = useState("");
   const { setAuthenticatedUser } = useContext(UserContext);
-  const { fcmToken } = useFcmToken();
   const registerData = [
     {
       name: "Username",
@@ -133,13 +131,12 @@ const useRegister = ({ navigation }: RegisterScreenProps) => {
     }
     const registerUrl: string = `${SERVER_URL}${REGISTER_ENDPOINT}`;
 
-    console.log(registerUrl);
     const response = await fetch(registerUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ username, email, password, fcmToken }),
+      body: JSON.stringify({ username, email, password }),
     });
 
     const result = await response.json();
