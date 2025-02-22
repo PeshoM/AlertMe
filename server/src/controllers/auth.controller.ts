@@ -53,26 +53,36 @@ const register = async (req: express.Request, res: express.Response) => {
   );
 
   await user.save();
-  res.status(200).send({ message: "success", auth_token });
+
+  const createdUser: IUser | null = await User.findOne({ username });
+
+  if (!createdUser) {
+    res.status(403).json({ message: "User does not exist" });
+    return;
+  }
+
+  res
+    .status(200)
+    .send({ message: "success", auth_token, userId: createdUser._id });
 };
 
 const login = async (req: express.Request, res: express.Response) => {
   const { username, password, fcmToken } = req.body;
-
+  
   const user: IUser | null = await User.findOne({ username });
 
   if (!user) {
     res.status(403).json({ message: "User does not exist" });
     return;
   }
-
+  
   const isPasswordValid: boolean = password === user.password;
 
   if (!isPasswordValid) {
     res.status(403).json({ message: "Invalid password" });
     return;
   }
-
+  
   let currDevice: IDevice | null = await Device.findOne({ fcmToken });
 
   if (!currDevice) {
@@ -95,7 +105,7 @@ const login = async (req: express.Request, res: express.Response) => {
       expiresIn: String(process.env.JWT_LONG_LIVED),
     }
   );
-
+  
   res.status(200).json({ message: "Login successful", auth_token });
 };
 
@@ -103,7 +113,7 @@ const getAuthenticatedUser = async (
   req: express.Request,
   res: express.Response
 ) => {
-  const { token, fcmToken } = req.body;
+  const { token } = req.body;
   const secretKey: string = process.env.JWT_SECRET_KEY || "";
 
   if (!token || !secretKey) {
