@@ -57,9 +57,9 @@ const FriendsScreen: React.FC = () => {
                   placeholder="Search"
                 />
                 {searchResults.length !== 0 ? (
-                  searchResults.map((result: IUser, index: number) => (
+                  searchResults.map((result: IUser, idx: number) => (
                     <TouchableOpacity
-                      key={result._id}
+                      key={idx}
                       activeOpacity={1}
                       onPress={() => {
                         handleNavigateToProfile(result._id);
@@ -128,10 +128,10 @@ const FriendsScreen: React.FC = () => {
               {sentRequests.length !== 0 && (
                 <View style={styles.container}>
                   {sentRequests.length !== 0 &&
-                    sentRequests.map((friend: IUser) => (
+                    sentRequests.map((friend: IUser, idx: number) => (
                       <TouchableOpacity
                         activeOpacity={1}
-                        key={friend._id}
+                        key={idx}
                         style={styles.friendItem}
                         onPress={() => {
                           handleNavigateToProfile(friend._id);
@@ -154,10 +154,10 @@ const FriendsScreen: React.FC = () => {
               {receivedRequests.length !== 0 && (
                 <View style={styles.container}>
                   {receivedRequests.length !== 0 &&
-                    receivedRequests.map((friend: IUser) => (
+                    receivedRequests.map((friend: IUser, idx: number) => (
                       <TouchableOpacity
                         activeOpacity={1}
-                        key={friend._id}
+                        key={idx}
                         style={styles.friendItem}
                         onPress={() => {
                           handleNavigateToProfile(friend._id);
@@ -178,10 +178,10 @@ const FriendsScreen: React.FC = () => {
           </View>
           <View style={styles.container}>
             {friends.length !== 0 &&
-              friends.map((friend: IUser) => (
+              friends.map((friend: IUser, idx: number) => (
                 <TouchableOpacity
                   activeOpacity={1}
-                  key={friend._id}
+                  key={idx}
                   style={styles.friendItem}
                   onPress={() => {
                     handleNavigateToProfile(friend._id);

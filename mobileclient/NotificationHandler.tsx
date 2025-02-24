@@ -16,8 +16,14 @@ const isValidScreen = (screen: unknown): screen is keyof AppParamList => {
 };
 
 const NotificationHandler: React.FC = () => {
-  const {setAuthenticatedUser, setFriends, setReceivedRequests, setSentRequests} =
-    useContext(UserContext);
+  const {
+    authenticatedUser,
+    friends,
+    setAuthenticatedUser,
+    setFriends,
+    setReceivedRequests,
+    setSentRequests,
+  } = useContext(UserContext);
 
   const handleAcceptedFriendRequest = async (
     remoteMessage: FirebaseMessagingTypes.RemoteMessage,
@@ -38,11 +44,9 @@ const NotificationHandler: React.FC = () => {
       return prevUser;
     });
     setSentRequests(prevRequests =>
-      prevRequests.filter(request => request !== openedUser),
+      prevRequests.filter(request => request._id !== openedUser._id),
     );
-    setFriends(prevFriends =>
-      openedUser ? [...prevFriends, openedUser] : prevFriends,
-    );
+    setFriends(prevFriends => [...prevFriends, openedUser]);
   };
 
   const handleRejectedFriendRequest = async (
@@ -62,8 +66,8 @@ const NotificationHandler: React.FC = () => {
       }
       return prevUser;
     });
-    setReceivedRequests(prevRequests =>
-      prevRequests.filter(request => request !== openedUser),
+    setSentRequests(prevRequests =>
+      prevRequests.filter(request => request._id !== openedUser._id),
     );
   };
 
@@ -103,8 +107,15 @@ const NotificationHandler: React.FC = () => {
       }
       return prevUser;
     });
+    console.log(
+      'authent user',
+      authenticatedUser.username,
+      'removed by',
+      openedUser.username,
+      friends,
+    );
     setFriends(prevFriends =>
-      prevFriends.filter(friend => friend !== openedUser),
+      prevFriends.filter(friend => friend._id !== openedUser._id),
     );
   };
 
