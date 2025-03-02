@@ -1,11 +1,9 @@
-import {useEffect, useState, useContext, useCallback} from 'react';
+import {useState, useContext, useCallback} from 'react';
 import {
   GET_FRIENDS_DATA,
   SERVER_URL,
   HANDLE_SEARCH,
   SEND_FRIEND_REQUEST,
-  REJECT_FRIEND_REQUEST,
-  ACCEPT_FRIEND_REQUEST,
 } from '@env';
 import {UserContext} from '../../../Context';
 import {IUser} from '../../../interfaces/user.interface';
@@ -105,7 +103,8 @@ const useFriends = () => {
   };
 
   const handleNavigateToProfile = (openedUserId: string) => {
-    navigation.navigate('Profile', {openedUserId});
+    authenticatedUser._id !== openedUserId &&
+      navigation.navigate('Profile', {openedUserId});
   };
 
   return {

@@ -17,8 +17,6 @@ const isValidScreen = (screen: unknown): screen is keyof AppParamList => {
 
 const NotificationHandler: React.FC = () => {
   const {
-    authenticatedUser,
-    friends,
     setAuthenticatedUser,
     setFriends,
     setReceivedRequests,
@@ -107,13 +105,6 @@ const NotificationHandler: React.FC = () => {
       }
       return prevUser;
     });
-    console.log(
-      'authent user',
-      authenticatedUser.username,
-      'removed by',
-      openedUser.username,
-      friends,
-    );
     setFriends(prevFriends =>
       prevFriends.filter(friend => friend._id !== openedUser._id),
     );
