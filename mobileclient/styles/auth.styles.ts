@@ -3,163 +3,172 @@ import {StyleSheet} from 'react-native';
 const styles = StyleSheet.create({
   rootContainer: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f8fafc',
   },
 
   container: {
     flex: 1,
     paddingTop: '10%',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
   },
 
   logoContainer: {
     flexDirection: 'row',
-    position: 'relative',
-    alignItems: 'baseline',
-    marginBottom: 20,
-    gap: 10,
+    alignItems: 'center',
+    marginBottom: 30,
+    gap: 12,
   },
 
   logoImage: {
-    width: 90,
-    height: 90,
-    borderRadius: 10,
+    width: 70,
+    height: 70,
+    borderRadius: 15,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
 
   logoText: {
-    fontSize: 40,
+    fontSize: 32,
     fontWeight: 'bold',
-    color: '#333',
-    alignSelf: 'center',
+    color: '#5a67d8',
   },
 
   title: {
-    fontSize: 32,
-    fontWeight: '900',
-    color: '#170361',
-    marginBottom: 10,
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#1a202c',
+    marginBottom: 24,
+    alignSelf: 'flex-start',
   },
 
   forgotPasswordText: {
-    fontSize: 18,
-    alignSelf: 'flex-start',
+    fontSize: 14,
+    alignSelf: 'flex-end',
     color: '#5a67d8',
     marginBottom: 30,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
 
   signInButton: {
     width: '100%',
     backgroundColor: '#5a67d8',
-    padding: 15,
-    borderRadius: 8,
+    padding: 16,
+    borderRadius: 10,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 20,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 2,
   },
 
   signInButtonText: {
     color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: '600',
   },
 
   signUpText: {
-    fontSize: 16,
-    marginTop: 20,
-    color: '#333',
-    fontWeight: 'bold',
+    fontSize: 14,
+    color: '#4a5568',
   },
 
   signUpLink: {
-    alignSelf: 'flex-start',
-    fontSize: 16,
     color: '#5a67d8',
-    fontWeight: 'bold',
+    fontWeight: '600',
+    marginLeft: 5,
+    fontSize: 14,
   },
 
   fieldLabels: {
-    color: '#333',
-    fontSize: 18,
+    color: '#4a5568',
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 8,
+    marginLeft: 2,
   },
 
   fieldWrapper: {
     width: '100%',
-    gap: 10,
+    marginBottom: 16,
   },
 
   invalidInput: {
-    color: '#bd062d',
-    borderColor: '#bd062d',
+    borderColor: '#e53e3e',
+    color: '#e53e3e',
   },
 
   invalidText: {
-    fontSize: 14,
-    color: '#FF0000',
+    color: '#e53e3e',
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 2,
   },
 
   contentWrapper: {
     flexDirection: 'column',
     width: '100%',
-    paddingHorizontal: 10,
   },
 
   fieldsDataContainer: {
-    paddingHorizontal: 20,
-    gap: 10,
+    width: '100%',
+    marginBottom: 10,
   },
 
   input: {
     width: '100%',
     fontSize: 16,
-    color: 'black',
+    color: '#1a202c',
+    height: '100%',
   },
 
   inputPassword: {
     width: '100%',
     fontSize: 16,
-    color: 'black',
+    color: '#1a202c',
     paddingRight: 45,
+    height: '100%',
   },
 
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#acacac',
+    borderWidth: 1,
+    borderColor: '#cbd5e0',
     borderRadius: 10,
-    paddingHorizontal: 10,
-    height: 60,
-    fontSize: 16,
+    paddingHorizontal: 16,
+    height: 50,
+    backgroundColor: '#ffffff',
   },
 
   inputContainerPassword: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#acacac',
+    borderWidth: 1,
+    borderColor: '#cbd5e0',
     borderRadius: 10,
-    paddingHorizontal: 10,
-    height: 60,
-    fontSize: 16,
+    paddingHorizontal: 16,
+    height: 50,
     width: '100%',
+    backgroundColor: '#ffffff',
   },
 
   iconContainer: {
-    top: 15,
     position: 'absolute',
-    right: 45,
-    borderLeftColor: 'black',
-    borderLeftWidth: 2,
-    borderStyle: 'solid',
+    right: 12,
+    height: '100%',
+    justifyContent: 'center',
   },
 
   icon: {
-    width: 30,
-    height: 30,
-    tintColor: '#666',
-    position: 'absolute',
-    right: -30,
+    width: 24,
+    height: 24,
+    tintColor: '#a0aec0',
   },
 
   modalContainer: {
@@ -170,17 +179,24 @@ const styles = StyleSheet.create({
   },
 
   errorBox: {
-    backgroundColor: '#dfdfdf',
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: '#ffffff',
+    padding: 20,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+    width: '80%',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
   },
 
   errorText: {
-    color: '#1c1c1c',
+    color: '#e53e3e',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '500',
+    textAlign: 'center',
   },
 });
 

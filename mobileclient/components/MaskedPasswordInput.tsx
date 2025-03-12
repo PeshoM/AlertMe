@@ -28,7 +28,7 @@ const MaskedPasswordInput = ({
       <TextInput
         style={styles.inputPassword}
         placeholder={field.placeholder}
-        placeholderTextColor={incorrectFields[idx] ? '#ff0000' : '#000'}
+        placeholderTextColor={incorrectFields[idx] ? '#e53e3e' : '#a0aec0'}
         value={isMasked ? '*'.repeat(field.getter.length) : field.getter}
         secureTextEntry={isMasked}
         onChangeText={handleTextChange}

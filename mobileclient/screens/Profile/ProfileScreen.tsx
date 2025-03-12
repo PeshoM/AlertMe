@@ -19,36 +19,55 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({route}) => {
 
   if (!openedUser) {
     return (
-      <View>
-        <Text>Loading</Text>
-      </View>
+      <SafeAreaView style={styles.loadingContainer}>
+        <View style={styles.loadingIndicator}>
+          <Text style={styles.loadingText}>Loading profile...</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.rootContainer}>
-      <View style={styles.friendUsernameContainer}>
-        <Text style={styles.friendUsername}>{openedUser.username}</Text>
+      <View style={styles.profileHeader}>
+        <View style={styles.avatarPlaceholder}>
+          <Text style={styles.avatarInitial}>
+            {openedUser.username.charAt(0).toUpperCase()}
+          </Text>
+        </View>
+        <Text style={styles.username}>{openedUser.username}</Text>
+
+        {authenticatedUser.friends.includes(openedUser._id) && (
+          <View style={styles.friendStatusBadge}>
+            <Text style={styles.friendStatusText}>Friends</Text>
+          </View>
+        )}
       </View>
-      {authenticatedUser.friends.includes(openedUser._id) && (
-        <Text style={styles.alreadyFriends}>You are friends</Text>
-      )}
-      <View>
+
+      <View style={styles.actionContainer}>
         {authenticatedUser.receivedFriendRequests.includes(openedUser._id) ? (
-          <View style={styles.handleRequestContainer}>
-            <TouchableOpacity
-              style={styles.optionButton}
-              onPress={() => handleAcceptFriendRequest(openedUser)}>
-              <Text style={styles.buttonText}>Accept</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.optionButton, styles.rejectButton]}
-              onPress={() => handleRejectFriendRequest(openedUser)}>
-              <Text style={styles.buttonText}>Reject</Text>
-            </TouchableOpacity>
+          <View style={styles.requestActionContainer}>
+            <Text style={styles.requestPendingText}>
+              Friend Request Received
+            </Text>
+            <View style={styles.handleRequestContainer}>
+              <TouchableOpacity
+                style={[styles.optionButton, styles.acceptButton]}
+                onPress={() => handleAcceptFriendRequest(openedUser)}>
+                <Text style={styles.buttonText}>Accept</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.optionButton, styles.rejectButton]}
+                onPress={() => handleRejectFriendRequest(openedUser)}>
+                <Text style={styles.buttonText}>Reject</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         ) : authenticatedUser.sentFriendRequests.includes(openedUser._id) ? (
-          <Text style={styles.alreadyFriends}>Request Sent</Text>
+          <View style={styles.pendingContainer}>
+            <Text style={styles.pendingText}>Friend Request Sent</Text>
+            <Text style={styles.pendingSubtext}>Waiting for response</Text>
+          </View>
         ) : !authenticatedUser.friends.includes(openedUser._id) ? (
           <TouchableOpacity
             style={styles.addFriendButton}
@@ -57,7 +76,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({route}) => {
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
-            style={styles.addFriendButton}
+            style={styles.removeFriendButton}
             onPress={() => handleRemoveFriend(openedUser)}>
             <Text style={styles.buttonText}>Remove Friend</Text>
           </TouchableOpacity>

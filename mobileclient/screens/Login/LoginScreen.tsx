@@ -11,6 +11,7 @@ import {
   Modal,
   KeyboardAvoidingView,
   Platform,
+  StatusBar,
 } from 'react-native';
 import {styles} from '../../styles/auth.styles';
 import {useLogin} from './hooks/useLogin';
@@ -32,63 +33,62 @@ const LoginScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.rootContainer}>
+      <StatusBar backgroundColor="#f8fafc" barStyle="dark-content" />
       <KeyboardAvoidingView
         style={{flex: 1}}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <ScrollView>
+        <ScrollView
+          contentContainerStyle={{flexGrow: 1}}
+          showsVerticalScrollIndicator={false}>
           <View style={styles.container}>
             <View style={styles.logoContainer}>
               <Image
                 style={styles.logoImage}
                 source={require('../../assets/images/logo.png')}
               />
-
               <Text style={styles.logoText}>AlertMe</Text>
             </View>
+
             <View style={styles.contentWrapper}>
-              <Text style={styles.title}>Sign In</Text>
+              <Text style={styles.title}>Welcome Back</Text>
+
               <View style={styles.fieldsDataContainer}>
                 {loginData.map((field: Field, idx: number) => (
-                  <View key={field.name}>
-                    <View style={styles.fieldWrapper}>
-                      <Text
+                  <View key={field.name} style={styles.fieldWrapper}>
+                    <Text
+                      style={[
+                        styles.fieldLabels,
+                        incorrectFields[idx] ? styles.invalidInput : null,
+                      ]}>
+                      {field.name}
+                    </Text>
+
+                    {field.name === 'Password' ? (
+                      <MaskedPasswordInput
+                        field={field}
+                        idx={idx}
+                        handleFieldChange={handleFieldChange}
+                        incorrectFields={incorrectFields}
+                      />
+                    ) : (
+                      <View
                         style={[
-                          styles.fieldLabels,
+                          styles.inputContainer,
                           incorrectFields[idx] ? styles.invalidInput : null,
                         ]}>
-                        {field.name}
-                        {incorrectFields[idx] && (
-                          <Text style={styles.invalidText}> *</Text>
-                        )}
-                      </Text>
-
-                      {field.name === 'Password' ? (
-                        <MaskedPasswordInput
-                          field={field}
-                          idx={idx}
-                          handleFieldChange={handleFieldChange}
-                          incorrectFields={incorrectFields}
+                        <TextInput
+                          style={styles.input}
+                          placeholder={field.placeholder}
+                          placeholderTextColor={
+                            incorrectFields[idx] ? '#e53e3e' : '#a0aec0'
+                          }
+                          value={field.getter}
+                          onChangeText={field.setter}
+                          onBlur={() => handleFieldChange(idx)}
+                          autoCapitalize="none"
                         />
-                      ) : (
-                        <View
-                          style={[
-                            styles.inputContainer,
-                            incorrectFields[idx] ? styles.invalidInput : null,
-                          ]}>
-                          <TextInput
-                            style={styles.input}
-                            placeholder={field.placeholder}
-                            placeholderTextColor={
-                              incorrectFields[idx] ? '#ff0000' : '#000'
-                            }
-                            value={field.getter}
-                            onChangeText={field.setter}
-                            onBlur={() => handleFieldChange(idx)}
-                            autoCapitalize="none"
-                          />
-                        </View>
-                      )}
-                    </View>
+                      </View>
+                    )}
 
                     {incorrectFields[idx] && (
                       <Text style={styles.invalidText}>
@@ -103,18 +103,25 @@ const LoginScreen: React.FC = () => {
                     Forgot password?
                   </Text>
                 </TouchableOpacity>
+
                 <TouchableOpacity
                   style={styles.signInButton}
                   onPress={handleLogin}>
                   <Text style={styles.signInButtonText}>Sign In</Text>
                 </TouchableOpacity>
 
-                <Text style={styles.signUpText}>
-                  Don't Have an Account?{' '}
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    marginTop: 24,
+                    alignItems: 'center',
+                  }}>
+                  <Text style={styles.signUpText}>Don't have an account?</Text>
                   <TouchableWithoutFeedback onPress={handleNavigateSignUp}>
                     <Text style={styles.signUpLink}>Sign Up</Text>
                   </TouchableWithoutFeedback>
-                </Text>
+                </View>
               </View>
             </View>
 

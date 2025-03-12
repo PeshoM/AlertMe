@@ -8,12 +8,41 @@ import {
   Pressable,
   Modal,
   TextInput,
+  FlatList,
+  StatusBar,
 } from 'react-native';
 import {styles} from '../../styles/friends.styles';
 import {UserContext} from '../../Context';
 import {IUser} from '../../interfaces/user.interface';
 import BottomNavigation from '../../components/BottomNavigation';
 import {useFriends} from './hooks/useFriends';
+
+// Component for friend list items
+const FriendItem = ({user, onPress}) => (
+  <TouchableOpacity
+    activeOpacity={0.8}
+    style={styles.friendItem}
+    onPress={onPress}>
+    <View style={styles.friendAvatarContainer}>
+      <Text style={styles.friendAvatar}>
+        {user.username.charAt(0).toUpperCase()}
+      </Text>
+    </View>
+    <Text style={styles.friendText}>{user.username}</Text>
+  </TouchableOpacity>
+);
+
+// Section header component
+const SectionHeader = ({title, count, onShowAll}) => (
+  <View style={styles.sectionHeader}>
+    <Text style={styles.sectionTitle}>{`${title} (${count})`}</Text>
+    {count > 2 && (
+      <TouchableOpacity onPress={onShowAll}>
+        <Text style={styles.sectionAction}>Show all</Text>
+      </TouchableOpacity>
+    )}
+  </View>
+);
 
 const FriendsScreen: React.FC = () => {
   const {authenticatedUser, receivedRequests, sentRequests, friends} =
@@ -32,166 +61,180 @@ const FriendsScreen: React.FC = () => {
 
   return (
     <View style={styles.rootContainer}>
-      <View>
-        <SafeAreaView style={styles.notchContainer}>
-          <Text style={styles.title}>AlertMe</Text>
-
-          <Pressable onPress={() => toggleModal(true)}>
+      <StatusBar backgroundColor="#5a67d8" barStyle="light-content" />
+      <SafeAreaView style={styles.headerContainer}>
+        <View style={styles.headerContent}>
+          <Text style={styles.title}>Friends</Text>
+          <Pressable
+            style={styles.searchButton}
+            onPress={() => toggleModal(true)}>
             <Image
               style={styles.searchIcon}
               source={require('../../assets/images/magnifier.png')}
             />
           </Pressable>
-
-          <Modal
-            animationType="none"
-            transparent={true}
-            visible={isModalVisible}
-            onRequestClose={() => toggleModal(false)}>
-            <View style={styles.modalContainer}>
-              <View style={styles.modalContent}>
-                <TextInput
-                  onChangeText={handleChange}
-                  value={input}
-                  style={styles.inputField}
-                  placeholder="Search"
-                />
-                {searchResults.length !== 0 ? (
-                  searchResults.map((result: IUser, idx: number) => (
-                    <TouchableOpacity
-                      key={idx}
-                      activeOpacity={1}
-                      onPress={() => {
-                        handleNavigateToProfile(result._id);
-                      }}
-                      onPressIn={() => handleResultLongPress(result.username)}
-                      onPressOut={() => handleResultLongPress('')}
-                      style={[
-                        styles.result,
-                        isHovered === result.username
-                          ? styles.hoveredResult
-                          : null,
-                      ]}>
-                      <Text style={styles.resultName}>
-                        {result.username}
-                        {authenticatedUser.username === result.username ? (
-                          <Text style={styles.resultNameMatched}>(You)</Text>
-                        ) : authenticatedUser.friends.includes(result._id) ? (
-                          <Text style={styles.resultNameMatched}>
-                            (Friends)
-                          </Text>
-                        ) : null}
-                      </Text>
-                      {authenticatedUser.receivedFriendRequests.length !== 0 &&
-                      authenticatedUser.receivedFriendRequests.includes(
-                        result._id,
-                      ) ? (
-                        <View style={styles.handleRequestText}>
-                          <Text>Pending</Text>
-                        </View>
-                      ) : authenticatedUser.sentFriendRequests.includes(
-                          result._id,
-                        ) ? (
-                        <Text>Sent</Text>
-                      ) : authenticatedUser.username !== result.username &&
-                        !authenticatedUser.friends.includes(result._id) ? (
-                        <TouchableOpacity
-                          onPress={() => handleSendFriendRequest(result)}>
-                          <Image
-                            style={styles.addFriendIcon}
-                            source={require('../../assets/images/addFriend.png')}
-                          />
-                        </TouchableOpacity>
-                      ) : null}
-                    </TouchableOpacity>
-                  ))
-                ) : (
-                  <View>
-                    <Text>No results found!</Text>
-                  </View>
-                )}
-              </View>
-            </View>
-          </Modal>
-        </SafeAreaView>
-
-        <View style={styles.friendRequests}>
-          {sentRequests.length !== 0 && (
-            <View>
-              <View style={styles.requestsMessage}>
-                <Text>{`Sent requests (${sentRequests.length})`}</Text>
-                {sentRequests.length > 2 && (
-                  <Text style={styles.showAllMessage}>Show all</Text>
-                )}
-              </View>
-
-              {sentRequests.length !== 0 && (
-                <View style={styles.container}>
-                  {sentRequests.length !== 0 &&
-                    sentRequests.map((friend: IUser, idx: number) => (
-                      <TouchableOpacity
-                        activeOpacity={1}
-                        key={idx}
-                        style={styles.friendItem}
-                        onPress={() => {
-                          handleNavigateToProfile(friend._id);
-                        }}>
-                        <Text style={styles.friendText}>{friend.username}</Text>
-                      </TouchableOpacity>
-                    ))}
-                </View>
-              )}
-            </View>
-          )}
-          {receivedRequests.length !== 0 && (
-            <View>
-              <View style={styles.requestsMessage}>
-                <Text>{`Friend requests (${receivedRequests.length})`}</Text>
-                {receivedRequests.length > 2 && (
-                  <Text style={styles.showAllMessage}>Show all</Text>
-                )}
-              </View>
-              {receivedRequests.length !== 0 && (
-                <View style={styles.container}>
-                  {receivedRequests.length !== 0 &&
-                    receivedRequests.map((friend: IUser, idx: number) => (
-                      <TouchableOpacity
-                        activeOpacity={1}
-                        key={idx}
-                        style={styles.friendItem}
-                        onPress={() => {
-                          handleNavigateToProfile(friend._id);
-                        }}>
-                        <Text style={styles.friendText}>{friend.username}</Text>
-                      </TouchableOpacity>
-                    ))}
-                </View>
-              )}
-            </View>
-          )}
         </View>
-        <View>
-          <View>
-            <View style={styles.requestsMessage}>
-              <Text>{`Your friends (${friends.length}):`}</Text>
-            </View>
+      </SafeAreaView>
+
+      <View style={styles.content}>
+        {/* Sent Requests Section */}
+        {sentRequests.length > 0 && (
+          <View style={styles.section}>
+            <SectionHeader
+              title="Sent requests"
+              count={sentRequests.length}
+              onShowAll={() => {}}
+            />
+            <FlatList
+              data={sentRequests.slice(0, 2)}
+              keyExtractor={item => item._id}
+              renderItem={({item}) => (
+                <FriendItem
+                  user={item}
+                  onPress={() => handleNavigateToProfile(item._id)}
+                />
+              )}
+              contentContainerStyle={styles.listContainer}
+            />
           </View>
-          <View style={styles.container}>
-            {friends.length !== 0 &&
-              friends.map((friend: IUser, idx: number) => (
-                <TouchableOpacity
-                  activeOpacity={1}
-                  key={idx}
-                  style={styles.friendItem}
-                  onPress={() => {
-                    handleNavigateToProfile(friend._id);
-                  }}>
-                  <Text style={styles.friendText}>{friend.username}</Text>
-                </TouchableOpacity>
-              ))}
+        )}
+
+        {/* Received Requests Section */}
+        {receivedRequests.length > 0 && (
+          <View style={styles.section}>
+            <SectionHeader
+              title="Friend requests"
+              count={receivedRequests.length}
+              onShowAll={() => {}}
+            />
+            <FlatList
+              data={receivedRequests.slice(0, 2)}
+              keyExtractor={item => item._id}
+              renderItem={({item}) => (
+                <FriendItem
+                  user={item}
+                  onPress={() => handleNavigateToProfile(item._id)}
+                />
+              )}
+              contentContainerStyle={styles.listContainer}
+            />
           </View>
+        )}
+
+        {/* Friends Section */}
+        <View style={styles.section}>
+          <SectionHeader
+            title="Your friends"
+            count={friends.length}
+            onShowAll={() => {}}
+          />
+          <FlatList
+            data={friends}
+            keyExtractor={item => item._id}
+            renderItem={({item}) => (
+              <FriendItem
+                user={item}
+                onPress={() => handleNavigateToProfile(item._id)}
+              />
+            )}
+            contentContainerStyle={styles.listContainer}
+          />
         </View>
       </View>
+
+      {/* Search Modal */}
+      <Modal
+        animationType="slide"
+        transparent={false}
+        visible={isModalVisible}
+        onRequestClose={() => toggleModal(false)}>
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Search Users</Text>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => toggleModal(false)}>
+              <Text style={styles.closeButtonText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.modalContent}>
+            <View style={styles.searchContainer}>
+              <TextInput
+                onChangeText={handleChange}
+                value={input}
+                style={styles.inputField}
+                placeholder="Search by username"
+                placeholderTextColor="#9ca3af"
+                autoFocus
+              />
+            </View>
+
+            <FlatList
+              data={searchResults}
+              keyExtractor={(item, index) => `${item._id}-${index}`}
+              renderItem={({item}) => (
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    handleNavigateToProfile(item._id);
+                    toggleModal(false);
+                  }}
+                  onPressIn={() => handleResultLongPress(item.username)}
+                  onPressOut={() => handleResultLongPress('')}
+                  style={[
+                    styles.result,
+                    isHovered === item.username && styles.hoveredResult,
+                  ]}>
+                  <View style={styles.resultInfo}>
+                    <View style={styles.resultAvatarContainer}>
+                      <Text style={styles.resultAvatar}>
+                        {item.username.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                    <View>
+                      <Text style={styles.resultName}>{item.username}</Text>
+                      {authenticatedUser.username === item.username && (
+                        <Text style={styles.resultBadge}>(You)</Text>
+                      )}
+                      {authenticatedUser.friends.includes(item._id) && (
+                        <Text style={styles.resultBadge}>(Friends)</Text>
+                      )}
+                    </View>
+                  </View>
+
+                  {authenticatedUser.receivedFriendRequests.includes(
+                    item._id,
+                  ) ? (
+                    <View style={styles.pendingBadge}>
+                      <Text style={styles.pendingText}>Pending</Text>
+                    </View>
+                  ) : authenticatedUser.sentFriendRequests.includes(
+                      item._id,
+                    ) ? (
+                    <View style={styles.sentBadge}>
+                      <Text style={styles.sentText}>Sent</Text>
+                    </View>
+                  ) : authenticatedUser.username !== item.username &&
+                    !authenticatedUser.friends.includes(item._id) ? (
+                    <TouchableOpacity
+                      style={styles.addButton}
+                      onPress={() => handleSendFriendRequest(item)}>
+                      <Text style={styles.addButtonText}>Add</Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </TouchableOpacity>
+              )}
+              ListEmptyComponent={
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>No users found</Text>
+                </View>
+              }
+            />
+          </View>
+        </SafeAreaView>
+      </Modal>
+
       <BottomNavigation />
     </View>
   );
