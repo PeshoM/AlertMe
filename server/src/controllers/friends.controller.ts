@@ -1,6 +1,6 @@
 import express from "express";
 import admin from "../config/firebase-config";
-import { IUser } from "../models/user.interface";
+import { IUser, IUserWithFriends } from "../models/user.interface";
 import { User } from "../schemas/users.schema";
 
 const sendNotification = async (
@@ -273,7 +273,7 @@ const fetchFriends = async (req: express.Request, res: express.Response) => {
     },
   ];
 
-  const [result]: IUser[] = await User.aggregate(pipeline).exec();
+  const [result]: IUserWithFriends[] = await User.aggregate(pipeline).exec();
 
   res.json({
     message: "success",

@@ -4,6 +4,7 @@ import * as dotenv from "dotenv";
 import mongoose from "mongoose";
 import authRouter from "./routes/auth.route";
 import friendsRouter from "./routes/friends.route";
+import combinationsRouter from "./routes/combinations.route";
 
 dotenv.config();
 
@@ -15,6 +16,7 @@ app.use(cors({ origin: "*" }));
 
 app.use(authRouter);
 app.use(friendsRouter);
+app.use(combinationsRouter);
 
 process.env.DATA_CONNECTION &&
   mongoose

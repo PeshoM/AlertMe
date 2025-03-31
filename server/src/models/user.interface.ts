@@ -1,10 +1,28 @@
-export interface IUser {
-  [x: string]: any;
+import { Document, Types } from "mongoose";
+
+export interface ICombination {
+  id: string;
+  name: string;
+  target: Types.ObjectId;
+  sequence: string[];
+  createdAt: number;
+  message?: string;
+}
+
+export interface IUser extends Document {
+  _id: Types.ObjectId;
   username: string;
   email: string;
   password: string;
-  friends: string[];
-  receivedFriendRequests: string[];
-  sentFriendRequests: string[];
+  friends: Types.ObjectId[];
+  receivedFriendRequests: Types.ObjectId[];
+  sentFriendRequests: Types.ObjectId[];
   devices: string[];
+  combinations: ICombination[];
 }
+
+export type IUserWithFriends = IUser & {
+  friendsList: IUser[];
+  receivedFriendRequests: IUser[];
+  sentFriendRequests: IUser[];
+};

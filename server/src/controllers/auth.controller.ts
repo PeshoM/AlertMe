@@ -34,7 +34,7 @@ const register = async (req: express.Request, res: express.Response) => {
   let devices: string[] = [];
   devices.push(fcmToken);
 
-  const user = new User<IUser>({
+  const user = new User({
     username,
     email,
     password,
@@ -42,6 +42,7 @@ const register = async (req: express.Request, res: express.Response) => {
     receivedFriendRequests: [],
     sentFriendRequests: [],
     devices,
+    combinations: [],
   });
 
   const auth_token: string = jwt.sign(
@@ -68,21 +69,21 @@ const register = async (req: express.Request, res: express.Response) => {
 
 const login = async (req: express.Request, res: express.Response) => {
   const { username, password, fcmToken } = req.body;
-  
+
   const user: IUser | null = await User.findOne({ username });
 
   if (!user) {
     res.status(403).json({ message: "User does not exist" });
     return;
   }
-  
+
   const isPasswordValid: boolean = password === user.password;
 
   if (!isPasswordValid) {
     res.status(403).json({ message: "Invalid password" });
     return;
   }
-  
+
   let currDevice: IDevice | null = await Device.findOne({ fcmToken });
 
   if (!currDevice) {
@@ -105,7 +106,7 @@ const login = async (req: express.Request, res: express.Response) => {
       expiresIn: String(process.env.JWT_LONG_LIVED),
     }
   );
-  
+
   res.status(200).json({ message: "Login successful", auth_token });
 };
 
