@@ -7,4 +7,13 @@ export interface IUser {
   receivedFriendRequests: string[];
   sentFriendRequests: string[];
   devices: string[];
+  combinations: ICombination[];
+}
+
+export interface ICombination {
+  id: string;
+  name: string;
+  target: string;
+  sequence: string[];
+  createdAt: number;
 }

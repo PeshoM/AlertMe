@@ -4,4 +4,5 @@ export type AppParamList = {
   Login: undefined;
   Register: undefined;
   Profile: { openedUserId: string};
+  Personal: undefined;
 };

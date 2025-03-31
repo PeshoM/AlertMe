@@ -114,6 +114,7 @@ const useFriends = () => {
     input,
     toggleModal,
     handleChange,
+    handleFetchFriends,
     handleResultLongPress,
     handleSendFriendRequest,
     handleNavigateToProfile,

@@ -6,6 +6,7 @@ import FriendsScreen from './screens/Friends/FriendsScreen';
 import LoginScreen from './screens/Login/LoginScreen';
 import RegisterScreen from './screens/Register/RegisterScreen';
 import ProfileScreen from './screens/Profile/ProfileScreen';
+import PersonalProfile from './screens/Personal/PersonalProfile';
 
 const Stack = createNativeStackNavigator<AppParamList>();
 
@@ -17,6 +18,7 @@ const AppNavigator: React.FC = () => {
       <Stack.Screen name="Home" component={HomeScreen} />
       <Stack.Screen name="Friends" component={FriendsScreen} />
       <Stack.Screen name="Profile" component={ProfileScreen} />
+      <Stack.Screen name="Personal" component={PersonalProfile} />
     </Stack.Navigator>
   );
 };

@@ -10,6 +10,10 @@ declare module '@env' {
   export const REJECT_FRIEND_REQUEST: string;
   export const FETCH_OPENED_USER: string;
   export const REMOVE_FRIEND: string;
+  export const GET_COMBINATIONS: string;
+  export const ADD_COMBINATION: string;
+  export const DELETE_COMBINATION: string;
+  export const UPDATE_COMBINATION: string;
   export const FIREBASE_APP_API_KEY: string;
   export const FIREBASE_APP_AUTH_DOMAIN: string;
   export const FIREBASE_APP_PROJECT_ID: string;

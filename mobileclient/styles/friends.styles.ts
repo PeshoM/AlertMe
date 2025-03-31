@@ -91,7 +91,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
-  // Modal styles
   modalContainer: {
     flex: 1,
     backgroundColor: '#f8fafc',

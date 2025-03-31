@@ -17,8 +17,12 @@ import {IUser} from '../../interfaces/user.interface';
 import BottomNavigation from '../../components/BottomNavigation';
 import {useFriends} from './hooks/useFriends';
 
-// Component for friend list items
-const FriendItem = ({user, onPress}) => (
+interface FriendItemProps {
+  user: IUser;
+  onPress: () => void;
+}
+
+const FriendItem = ({user, onPress}: FriendItemProps) => (
   <TouchableOpacity
     activeOpacity={0.8}
     style={styles.friendItem}
@@ -32,8 +36,13 @@ const FriendItem = ({user, onPress}) => (
   </TouchableOpacity>
 );
 
-// Section header component
-const SectionHeader = ({title, count, onShowAll}) => (
+interface SectionHeaderProps {
+  title: string;
+  count: number;
+  onShowAll: () => void;
+}
+
+const SectionHeader = ({title, count, onShowAll}: SectionHeaderProps) => (
   <View style={styles.sectionHeader}>
     <Text style={styles.sectionTitle}>{`${title} (${count})`}</Text>
     {count > 2 && (
