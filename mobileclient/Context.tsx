@@ -1,5 +1,6 @@
 import {IUser} from './interfaces/user.interface';
-import React, {createContext, useState} from 'react';
+import {Combination} from './interfaces/combination.interface';
+import React, {createContext, useState, useRef} from 'react';
 import {
   userContextProps,
   UserContextType,
@@ -14,6 +15,7 @@ const defaultUser: IUser = {
   receivedFriendRequests: [],
   sentFriendRequests: [],
   devices: [],
+  combinations: [],
 };
 
 const UserContext = createContext<UserContextType>({
@@ -25,6 +27,9 @@ const UserContext = createContext<UserContextType>({
   setSentRequests: () => {},
   friends: [],
   setFriends: () => {},
+  combinations: [],
+  setCombinations: () => {},
+  combinationsRef: {current: []},
 });
 
 const Context = ({children}: userContextProps) => {
@@ -33,6 +38,13 @@ const Context = ({children}: userContextProps) => {
   const [receivedRequests, setReceivedRequests] = useState<IUser[]>([]);
   const [sentRequests, setSentRequests] = useState<IUser[]>([]);
   const [friends, setFriends] = useState<IUser[]>([]);
+  const [combinations, setCombinations] = useState<Combination[]>([]);
+
+  const combinationsRef = useRef<Combination[]>([]);
+
+  React.useEffect(() => {
+    combinationsRef.current = combinations;
+  }, [combinations]);
 
   return (
     <UserContext.Provider
@@ -45,6 +57,9 @@ const Context = ({children}: userContextProps) => {
         setSentRequests,
         friends,
         setFriends,
+        combinations,
+        setCombinations,
+        combinationsRef,
       }}>
       {children}
     </UserContext.Provider>

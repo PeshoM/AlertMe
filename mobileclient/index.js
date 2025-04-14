@@ -4,6 +4,7 @@
 import {AppRegistry} from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 import App from './App';
+import Application from './Application';
 import {name as appName} from './app.json';
 
 messaging().onNotificationOpenedApp(remoteMessage => {
@@ -24,4 +25,4 @@ messaging().setBackgroundMessageHandler(async remoteMessage => {
   );
 });
 
-AppRegistry.registerComponent(appName, () => App);
+AppRegistry.registerComponent(appName, () => Application);
