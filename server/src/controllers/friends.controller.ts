@@ -298,12 +298,12 @@ const searchUsers = async (req: express.Request, res: express.Response) => {
 const fetchOpenedUser = async (req: express.Request, res: express.Response) => {
   const { openedUserId } = req.body as { openedUserId: string };
 
-  const openedUser: IUser | null = await User.findById(openedUserId);
-
-  if (!openedUser) {
+  if (!openedUserId || openedUserId === "") {
     res.json({ message: "User doesn't exist" });
     return;
   }
+
+  const openedUser: IUser | null = await User.findById(openedUserId);
 
   res.json({ message: "success", openedUser });
 };
