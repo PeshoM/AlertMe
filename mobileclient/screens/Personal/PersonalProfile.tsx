@@ -15,7 +15,10 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import BottomNavigation from '../../components/BottomNavigation';
 import {styles} from '../../styles/personalProfile.styles';
 import {usePersonalProfile} from './Hooks/usePersonalProfile';
-import {SavedSequence, Combination} from './Hooks/usePersonalProfile';
+import {
+  Combination,
+  SavedSequence,
+} from '../../interfaces/combination.interface';
 
 const PersonalProfile: React.FC = () => {
   const {
@@ -35,128 +38,22 @@ const PersonalProfile: React.FC = () => {
     deleteSequence,
     authenticatedUser,
     friends,
+    combinationModalVisible,
+    setCombinationModalVisible,
+    saveModalVisible,
+    setSaveModalVisible,
+    sequenceName,
+    setSequenceName,
+    selectedFriends,
+    setSelectedFriends,
+    editingCombinationId,
+    openCombinationModal,
+    closeModal,
+    openSaveModal,
+    handleSaveCombination,
+    handleSaveSequence,
+    handleDeleteSequence,
   } = usePersonalProfile();
-
-  const [combinationModalVisible, setCombinationModalVisible] =
-    useState<boolean>(false);
-  const [saveModalVisible, setSaveModalVisible] = useState<boolean>(false);
-  const [sequenceName, setSequenceName] = useState<string>('');
-  const [selectedFriends, setSelectedFriends] = useState<string[]>([]);
-  const [editingCombinationId, setEditingCombinationId] = useState<
-    string | null
-  >(null);
-
-  const openCombinationModal = (combinationToEdit?: Combination) => {
-    clearSequence();
-
-    if (combinationToEdit) {
-
-      nameInputRef.current = combinationToEdit.name;
-      messageInputRef.current = combinationToEdit.message || '';
-      setSelectedFriends([combinationToEdit.target]);
-      loadSequence(combinationToEdit.sequence);
-      setEditingCombinationId(combinationToEdit.id);
-    } else {
-      nameInputRef.current = '';
-      messageInputRef.current = '';
-      setSelectedFriends([]);
-      setEditingCombinationId(null);
-    }
-
-    setCombinationModalVisible(true);
-  };
-
-  const openSaveModal = () => {
-    if (buttonSequence.length === 0) {
-      console.log('Error: Cannot save an empty sequence');
-      return;
-    }
-    setSequenceName('');
-    setSaveModalVisible(true);
-  };
-
-  const handleSaveCombination = async () => {
-    const result = await saveCombination(
-      buttonSequence,
-      selectedFriends,
-      editingCombinationId,
-    );
-    if (result.success) {
-      setCombinationModalVisible(false);
-      clearSequence();
-      setSelectedFriends([]);
-      setEditingCombinationId(null);
-    } else {
-      console.log(`Error: ${result.message}`);
-    }
-  };
-
-  const handleSaveSequence = async () => {
-    const result = await saveSequence(sequenceName, buttonSequence);
-    if (result.success) {
-      setSaveModalVisible(false);
-    } else {
-      console.log(`Error: ${result.message}`);
-    }
-  };
-
-  const handleDeleteSequence = (id: string) => {
-    Alert.alert(
-      'Delete Sequence',
-      'Are you sure you want to delete this sequence?',
-      [
-        {text: 'Cancel', style: 'cancel'},
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            await deleteSequence(id);
-          },
-        },
-      ],
-    );
-  };
-
-  const renderSavedSequenceItem = ({item}: {item: SavedSequence}) => (
-    <View style={styles.savedSequenceItem}>
-      <View style={styles.savedSequenceInfo}>
-        <Text style={styles.savedSequenceName}>{item.name}</Text>
-        <Text style={styles.savedSequenceDate}>
-          {new Date(item.createdAt).toLocaleDateString()}
-        </Text>
-      </View>
-
-      <View style={styles.savedSequenceButtons}>
-        {item.sequence.map((button: string, index: number) => (
-          <View
-            key={index}
-            style={[
-              styles.miniSequenceButton,
-              button === 'volumeUp'
-                ? styles.volumeUpButton
-                : styles.volumeDownButton,
-            ]}>
-            <Text style={styles.miniSequenceButtonText}>
-              {button === 'volumeUp' ? '▲' : '▼'}
-            </Text>
-          </View>
-        ))}
-      </View>
-
-      <View style={styles.savedSequenceActions}>
-        <TouchableOpacity
-          style={styles.loadButton}
-          onPress={() => loadSequence(item.sequence)}>
-          <Text style={styles.loadButtonText}>Load</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={() => handleDeleteSequence(item.id)}>
-          <Text style={styles.deleteButtonText}>Delete</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
 
   const renderCombinationItem = ({item}: {item: Combination}) => {
     const targetFriend = friends.find(friend => friend._id === item.target);
@@ -220,13 +117,15 @@ const PersonalProfile: React.FC = () => {
   const CreateCombinationModal = () => {
     const [nameValue, setNameValue] = useState('');
     const [messageValue, setMessageValue] = useState('');
+    const [valuesInitialized, setValuesInitialized] = useState(false);
 
     React.useEffect(() => {
-      if (combinationModalVisible) {
+      if (combinationModalVisible && !valuesInitialized) {
         setNameValue(nameInputRef.current);
         setMessageValue(messageInputRef.current);
+        setValuesInitialized(true);
       }
-    }, [combinationModalVisible]);
+    }, [combinationModalVisible, valuesInitialized]);
 
     const handleNameChange = (text: string) => {
       setNameValue(text);
@@ -239,19 +138,32 @@ const PersonalProfile: React.FC = () => {
     };
 
     const toggleFriendSelect = (friendId: string) => {
-      setSelectedFriends(prev =>
+      setSelectedFriends((prev: string[]) =>
         prev.includes(friendId)
-          ? prev.filter(id => id !== friendId)
+          ? prev.filter((id: string) => id !== friendId)
           : [...prev, friendId],
       );
     };
+
+    const handleCloseModal = () => {
+      closeModal();
+      setValuesInitialized(false);
+    };
+
+    const handleSaveButtonPress = () => handleSaveCombination();
+
+    const saveButtonDisabled =
+      isSubmitting ||
+      buttonSequence.length === 0 ||
+      selectedFriends.length === 0 ||
+      !nameValue.trim();
 
     return (
       <Modal
         visible={combinationModalVisible}
         transparent={true}
         animationType="fade"
-        onRequestClose={() => setCombinationModalVisible(false)}>
+        onRequestClose={handleCloseModal}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             {isSubmitting && (
@@ -382,19 +294,16 @@ const PersonalProfile: React.FC = () => {
               <View style={styles.modalButtons}>
                 <TouchableOpacity
                   style={styles.modalCancelButton}
-                  onPress={() => {
-                    setCombinationModalVisible(false);
-                    setEditingCombinationId(null);
-                  }}>
+                  onPress={handleCloseModal}>
                   <Text style={styles.modalCancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[
                     styles.modalSaveButton,
-                    isSubmitting && styles.disabledButton,
+                    saveButtonDisabled && styles.disabledButton,
                   ]}
-                  onPress={handleSaveCombination}
-                  disabled={isSubmitting || buttonSequence.length === 0}>
+                  onPress={handleSaveButtonPress}
+                  disabled={saveButtonDisabled}>
                   <Text style={styles.modalSaveButtonText}>
                     {isSubmitting ? 'Saving...' : 'Save'}
                   </Text>

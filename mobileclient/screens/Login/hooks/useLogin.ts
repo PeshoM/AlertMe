@@ -24,7 +24,8 @@ const useLogin = () => {
     Array(2).fill(''),
   );
   const [error, setError] = useState('');
-  const {setAuthenticatedUser} = useContext(UserContext);
+  const {setAuthenticatedUser, setCombinations, combinationsRef} =
+    useContext(UserContext);
   const {fcmToken} = useFcmToken();
 
   const loginData: Field[] = [
@@ -106,7 +107,7 @@ const useLogin = () => {
       }
     }
     const loginUrl: string = `${SERVER_URL}${LOGIN_ENDPOINT}`;
-    
+
     const response = await fetch(loginUrl, {
       method: 'POST',
       headers: {
@@ -116,7 +117,7 @@ const useLogin = () => {
     });
 
     const result = await response.json();
-    
+
     if (!result.auth_token) {
       setUsername('');
       setPassword('');
@@ -154,6 +155,20 @@ const useLogin = () => {
     if (!response.authenticatedUser) return;
 
     setAuthenticatedUser(response.authenticatedUser);
+
+    if (response.authenticatedUser.combinations) {
+      setCombinations(response.authenticatedUser.combinations);
+
+      if (combinationsRef && 'current' in combinationsRef) {
+        combinationsRef.current = response.authenticatedUser.combinations;
+      }
+
+      await AsyncStorage.setItem(
+        `@combinations_${response.authenticatedUser._id}`,
+        JSON.stringify(response.authenticatedUser.combinations),
+      );
+    }
+
     navigation.navigate('Home');
   };
 

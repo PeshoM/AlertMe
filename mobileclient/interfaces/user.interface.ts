@@ -16,4 +16,5 @@ export interface ICombination {
   target: string;
   sequence: string[];
   createdAt: number;
+  message?: string;
 }

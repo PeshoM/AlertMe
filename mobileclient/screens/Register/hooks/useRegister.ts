@@ -173,6 +173,7 @@ const useRegister = () => {
         receivedFriendRequests: [],
         sentFriendRequests: [],
         devices: [result.userId],
+        combinations: [],
       });
       navigation.navigate('Home');
     }

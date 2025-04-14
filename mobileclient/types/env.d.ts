@@ -14,6 +14,7 @@ declare module '@env' {
   export const ADD_COMBINATION: string;
   export const DELETE_COMBINATION: string;
   export const UPDATE_COMBINATION: string;
+  export const TRIGGER_COMBINATION: string;
   export const FIREBASE_APP_API_KEY: string;
   export const FIREBASE_APP_AUTH_DOMAIN: string;
   export const FIREBASE_APP_PROJECT_ID: string;
