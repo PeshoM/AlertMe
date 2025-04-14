@@ -112,6 +112,13 @@ dependencies {
     implementation("com.facebook.react:react-android")
     implementation platform('com.google.firebase:firebase-bom:32.2.0')
     implementation 'com.google.firebase:firebase-messaging'
+    
+    // Add media-related dependencies
+    implementation "androidx.media:media:1.6.0"
+    implementation "androidx.legacy:legacy-support-v4:1.0.0"
+    implementation "com.android.support:support-media-compat:28.0.0"
+    implementation "com.android.support:support-v4:28.0.0"
+    
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")
     } else {

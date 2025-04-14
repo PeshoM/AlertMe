@@ -2,143 +2,211 @@ package com.peshom.mobileclient
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.media.AudioManager
+import android.media.session.MediaSession
+import android.media.session.PlaybackState
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
-import android.util.Log
+import android.os.Looper
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
+import android.view.KeyEvent
 import androidx.core.app.NotificationCompat
 
 class ButtonHandlerService : Service() {
-
-    private lateinit var volumeReceiver: BroadcastReceiver
-    private var previousVolume: Int = -1
-    private var ignoreNextVolumeChange = false
-    private var isInitialVolumeCaptured = false
-    private var lastEventTime = 0L
-    private val EVENT_THROTTLE_MS = 300
-    private val CHANNEL_ID = "VolumeServiceChannel"
+    private lateinit var mediaSession: MediaSession
     private lateinit var audioManager: AudioManager
-    private var maxVolume: Int = 0
-    private var isAdjustingVolume = false
+    private var lastVolume = 0
+    private val handler = Handler(Looper.getMainLooper())
+    private var lastEventTime = 0L
+    private val throttleTime = 300L
+    private var isServiceReady = false
 
-    override fun onBind(intent: Intent?): IBinder? {
-        return null
+    companion object {
+        private const val NOTIFICATION_ID = 101
+        private const val CHANNEL_ID = "AlertMeService"
     }
 
     override fun onCreate() {
         super.onCreate()
+        startForeground(NOTIFICATION_ID, createNotification())
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+        lastVolume = getSystemVolume()
+        setupMediaSession()
+        isServiceReady = true
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        createNotificationChannel()
-        startForeground()
-        registerVolumeReceiver()
-
-        val currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
-        if (currentVolume == maxVolume) {
-            isAdjustingVolume = true
-            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, maxVolume - 1, 0)
-            isAdjustingVolume = false
-        } else if (currentVolume == 0) {
-            isAdjustingVolume = true
-            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 1, 0)
-            isAdjustingVolume = false
-        }
-
-        return Service.START_STICKY
-    }
-
-    private fun startForeground() {
-        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Volume Monitor")
-            .setContentText("Listening for volume buttons")
-            .setSmallIcon(R.drawable.ic_notification)
-            .build()
-
-        startForeground(1, notification)
-    }
-
-    private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val serviceChannel = NotificationChannel(
-                CHANNEL_ID,
-                "Volume Service Channel",
-                NotificationManager.IMPORTANCE_DEFAULT
-            )
-            val manager = getSystemService(NotificationManager::class.java)
-            manager.createNotificationChannel(serviceChannel)
+            startForeground(NOTIFICATION_ID, createNotification())
         }
-    }
-
-    private fun showNotification(message: String) {
-        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("AlertMe")
-            .setContentText(message)
-            .setSmallIcon(R.drawable.ic_notification)
-            .build()
-
-        val manager = getSystemService(NotificationManager::class.java)
-        manager.notify(System.currentTimeMillis().toInt(), notification)
-    }
-
-    private fun registerVolumeReceiver() {
-
-        previousVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
-        isInitialVolumeCaptured = true
-        Log.d("ButtonHandlerService", "Initial volume set to: $previousVolume")
         
-        volumeReceiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent?) {
-                if (intent?.action == "android.media.VOLUME_CHANGED_ACTION") {
-                    val currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
-                    Log.d("ButtonHandlerService", "Volume event received: current=$currentVolume, previous=$previousVolume")
-                    
-                    if (ignoreNextVolumeChange) {
-                        Log.d("ButtonHandlerService", "Ignoring volume change as flagged")
-                        ignoreNextVolumeChange = false
-                        previousVolume = currentVolume
-                        return
-                    }
-                    
-                    if (isInitialVolumeCaptured && currentVolume != previousVolume) {
-                        if (currentVolume > previousVolume) {
-                            Log.d("ButtonHandlerService", "Volume Up! Current Volume: $currentVolume")
-                            val params = VolumeServiceModule.createEventParams("volumeUp", currentVolume)
-                            VolumeServiceModule.emitJSEvent("VolumeEvent", params)
-                        } else if (currentVolume < previousVolume) {
-                            Log.d("ButtonHandlerService", "Volume Down! Current Volume: $currentVolume")
-                            val params = VolumeServiceModule.createEventParams("volumeDown", currentVolume)
-                            VolumeServiceModule.emitJSEvent("VolumeEvent", params)
-                        }
-                    }
-                    
-                    previousVolume = currentVolume
-                    
-                    if (currentVolume == 0) {
-                        Log.d("ButtonHandlerService", "Adjusting volume from 0 to 1")
-                        ignoreNextVolumeChange = true
-                        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 1, 0)
-                    } else if (currentVolume == maxVolume) {
-                        Log.d("ButtonHandlerService", "Adjusting volume from max to max-1")
-                        ignoreNextVolumeChange = true
-                        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, maxVolume - 1, 0)
-                    }
-                }
+        if (intent?.action == Intent.ACTION_MEDIA_BUTTON) {
+            val keyEvent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
+            }
+            
+            if (keyEvent != null) {
+                handleKeyEvent(keyEvent)
+                return START_STICKY
             }
         }
-        val filter = IntentFilter("android.media.VOLUME_CHANGED_ACTION")
-        registerReceiver(volumeReceiver, filter)
+        
+        when (intent?.action) {
+            "volume_up" -> {
+                handleVolumeKey("volumeUp")
+                return START_STICKY
+            }
+            "volume_down" -> {
+                handleVolumeKey("volumeDown")
+                return START_STICKY
+            }
+        }
+        
+        return START_STICKY
+    }
+
+    override fun onBind(intent: Intent?): IBinder? = null
+
+    private fun setupMediaSession() {
+        mediaSession = MediaSession(this, "AlertMeMediaSession").apply {
+            setCallback(object : MediaSession.Callback() {
+                override fun onMediaButtonEvent(mediaButtonIntent: Intent): Boolean {
+                    val keyEvent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        mediaButtonIntent.getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
+                    } else {
+                        @Suppress("DEPRECATION")
+                        mediaButtonIntent.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
+                    }
+                    
+                    return if (keyEvent != null) {
+                        handleKeyEvent(keyEvent)
+                    } else {
+                        super.onMediaButtonEvent(mediaButtonIntent)
+                    }
+                }
+            })
+            
+            setPlaybackState(PlaybackState.Builder()
+                .setActions(PlaybackState.ACTION_PLAY_PAUSE)
+                .setState(PlaybackState.STATE_PLAYING, 0, 1.0f)
+                .build())
+            
+            isActive = true
+        }
+    }
+
+    private fun handleKeyEvent(event: KeyEvent): Boolean {
+        if (event.action != KeyEvent.ACTION_DOWN) {
+            return false
+        }
+        
+        return when (event.keyCode) {
+            KeyEvent.KEYCODE_VOLUME_UP -> {
+                handleVolumeKey("volumeUp")
+                true
+            }
+            KeyEvent.KEYCODE_VOLUME_DOWN -> {
+                handleVolumeKey("volumeDown")
+                true
+            }
+            else -> false
+        }
+    }
+
+    private fun handleVolumeKey(action: String) {
+        val currentTime = System.currentTimeMillis()
+        
+        if (currentTime - lastEventTime < throttleTime) {
+            return
+        }
+        
+        lastEventTime = currentTime
+        vibrate(50)
+        VolumeServiceModule.handleVolumeButtonPress(applicationContext, action)
+    }
+
+    private fun getSystemVolume(): Int {
+        return try {
+            audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+        } catch (e: Exception) {
+            0
+        }
+    }
+
+    private fun vibrate(duration: Long) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+                vibratorManager.defaultVibrator.vibrate(
+                    VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE)
+                )
+            } else {
+                val vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    vibrator.vibrate(VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE))
+                } else {
+                    @Suppress("DEPRECATION")
+                    vibrator.vibrate(duration)
+                }
+            }
+        } catch (e: Exception) { }
+    }
+
+    private fun createNotification(): android.app.Notification {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                "AlertMe Service",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "Background service for AlertMe app"
+            }
+            
+            val notificationManager = getSystemService(NotificationManager::class.java)
+            notificationManager.createNotificationChannel(channel)
+        }
+        
+        val pendingIntent = PendingIntent.getActivity(
+            this, 0, 
+            packageManager.getLaunchIntentForPackage(packageName), 
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) 
+                PendingIntent.FLAG_IMMUTABLE 
+            else 
+                PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        
+        return try {
+            NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle("AlertMe")
+                .setContentText("Listening for combinations")
+                .setSmallIcon(android.R.drawable.ic_lock_silent_mode_off)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setContentIntent(pendingIntent)
+                .build()
+        } catch (e: Exception) {
+            NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle("AlertMe")
+                .setContentText("Service running")
+                .setSmallIcon(android.R.drawable.ic_lock_silent_mode_off)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .build()
+        }
     }
 
     override fun onDestroy() {
+        if (::mediaSession.isInitialized) {
+            mediaSession.release()
+        }
         super.onDestroy()
-        unregisterReceiver(volumeReceiver)
     }
 }

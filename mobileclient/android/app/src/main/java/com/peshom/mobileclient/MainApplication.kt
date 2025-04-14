@@ -12,10 +12,13 @@ import com.facebook.react.defaults.DefaultReactHost.getDefaultReactHost
 import com.facebook.react.defaults.DefaultReactNativeHost
 import com.facebook.react.soloader.OpenSourceMergedSoMapping
 import com.facebook.soloader.SoLoader
+import android.util.Log
+import android.os.Handler
+import android.os.Looper
 
 class MainApplication : Application(), ReactApplication {
 
-
+  private val TAG = "MainApplication"
 
   override val reactNativeHost: ReactNativeHost =
       object : DefaultReactNativeHost(this) {
@@ -38,13 +41,13 @@ class MainApplication : Application(), ReactApplication {
 
   override fun onCreate() {
     super.onCreate()
-
-      // val serviceIntent = Intent(this, ButtonHandlerService::class.java)
-      // startForegroundService(serviceIntent)
-
+    
     SoLoader.init(this, OpenSourceMergedSoMapping)
     if (BuildConfig.IS_NEW_ARCHITECTURE_ENABLED) {
       load()
     }
+    
+    // We'll let React Native handle the service starting
+    // instead of starting services from here to avoid conflicts
   }
 }

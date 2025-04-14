@@ -22,6 +22,8 @@ android/app/.vs/
 android/app/src/androidTest/
 android/app/src/test/
 android/app/google-services.json
+android/app/src/main/res/**/node_modules_*.png
+
 
 # iOS
 ios/
