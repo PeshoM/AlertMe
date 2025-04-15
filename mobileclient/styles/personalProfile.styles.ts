@@ -232,10 +232,17 @@ const styles = StyleSheet.create({
     borderColor: '#f0f4f8',
   },
   savedSequenceItem: {
-    backgroundColor: '#f7fafc',
+    backgroundColor: '#ffffff',
     borderRadius: 8,
     padding: 12,
-    marginBottom: 12,
+    marginVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   savedSequenceInfo: {
     flexDirection: 'row',
@@ -251,6 +258,7 @@ const styles = StyleSheet.create({
   savedSequenceDate: {
     fontSize: 12,
     color: '#718096',
+    alignSelf: 'center',
   },
   savedSequenceButtons: {
     flexDirection: 'row',
@@ -271,8 +279,19 @@ const styles = StyleSheet.create({
   },
   savedSequenceActions: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginTop: 8,
+    width: '100%',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  savedSequenceFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
   loadButton: {
@@ -423,37 +442,41 @@ const styles = StyleSheet.create({
   },
   targetContainer: {
     flexDirection: 'row',
+    marginVertical: 4,
+    paddingHorizontal: 8,
     alignItems: 'center',
-    marginBottom: 8,
   },
   targetLabel: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#4a5568',
+    fontWeight: 'bold',
+    color: '#4A5568',
+    marginRight: 4,
   },
   targetName: {
     fontSize: 14,
-    color: '#2d3748',
+    color: '#2D3748',
     fontWeight: '500',
   },
   messageContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
+    marginTop: 4,
     marginBottom: 8,
-    paddingHorizontal: 0,
+    paddingHorizontal: 8,
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
   },
   messageLabel: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#4a5568',
+    fontWeight: 'bold',
+    color: '#4A5568',
     marginRight: 4,
   },
   messageText: {
     fontSize: 14,
-    color: '#2d3748',
-    fontWeight: '400',
+    color: '#2D3748',
     flex: 1,
     flexWrap: 'wrap',
+    lineHeight: 20,
   },
   friendsContainer: {
     marginTop: 16,
@@ -678,6 +701,10 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.5,
+  },
+  disabledText: {
+    opacity: 0.5,
+    color: '#a0aec0',
   },
   friendsList: {
     marginVertical: 10,

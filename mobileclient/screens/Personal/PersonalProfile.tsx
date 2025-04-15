@@ -24,22 +24,14 @@ const PersonalProfile: React.FC = () => {
   const {
     serviceRunning,
     buttonSequence,
-    savedSequences,
     combinations,
     isSubmitting,
     nameInputRef,
     messageInputRef,
     toggleService,
-    loadSequence,
     clearSequence,
-    saveCombination,
-    saveSequence,
-    deleteCombination,
-    deleteSequence,
-    authenticatedUser,
     friends,
     combinationModalVisible,
-    setCombinationModalVisible,
     saveModalVisible,
     setSaveModalVisible,
     sequenceName,
@@ -49,11 +41,13 @@ const PersonalProfile: React.FC = () => {
     editingCombinationId,
     openCombinationModal,
     closeModal,
-    openSaveModal,
     handleSaveCombination,
     handleSaveSequence,
-    handleDeleteSequence,
+    showDeleteConfirmation,
   } = usePersonalProfile();
+
+  const handleOpenCombinationModal = (combination?: Combination) =>
+    openCombinationModal(combination);
 
   const renderCombinationItem = ({item}: {item: Combination}) => {
     const targetFriend = friends.find(friend => friend._id === item.target);
@@ -101,12 +95,12 @@ const PersonalProfile: React.FC = () => {
         <View style={styles.savedSequenceActions}>
           <TouchableOpacity
             style={[styles.loadButton, styles.editButton]}
-            onPress={() => openCombinationModal(item)}>
+            onPress={() => handleOpenCombinationModal(item)}>
             <Text style={styles.editButtonText}>Edit</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.deleteButton}
-            onPress={() => deleteCombination(item.id)}>
+            onPress={() => showDeleteConfirmation(item.id, 'combination')}>
             <Text style={styles.deleteButtonText}>Delete</Text>
           </TouchableOpacity>
         </View>
@@ -157,6 +151,8 @@ const PersonalProfile: React.FC = () => {
       buttonSequence.length === 0 ||
       selectedFriends.length === 0 ||
       !nameValue.trim();
+
+    const hasFriends = Array.isArray(friends) && friends.length > 0;
 
     return (
       <Modal
@@ -263,7 +259,7 @@ const PersonalProfile: React.FC = () => {
                 />
               </View>
               <Text style={styles.modalSubtitle}>Select Target Friends:</Text>
-              {friends?.length > 0 ? (
+              {hasFriends ? (
                 <View style={styles.friendsList}>
                   {friends.map(friend => (
                     <TouchableOpacity
@@ -287,7 +283,8 @@ const PersonalProfile: React.FC = () => {
               ) : (
                 <View style={styles.noFriendsContainer}>
                   <Text style={styles.noFriendsText}>
-                    You currently have no friends added.
+                    You currently have no friends added. Please add friends from
+                    the Friends section first.
                   </Text>
                 </View>
               )}
@@ -326,7 +323,7 @@ const PersonalProfile: React.FC = () => {
       <ScrollView style={styles.content}>
         <TouchableOpacity
           style={styles.createCombinationButton}
-          onPress={() => openCombinationModal()}>
+          onPress={() => handleOpenCombinationModal()}>
           <Text style={styles.createCombinationButtonText}>
             Create Combination
           </Text>

@@ -148,6 +148,46 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
     textTransform: 'uppercase',
   },
+  serviceStatusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: '#f7fafc',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  statusIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 8,
+  },
+  statusRunning: {
+    backgroundColor: '#48bb78',
+  },
+  statusStopped: {
+    backgroundColor: '#f56565',
+  },
+  serviceStatusText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#4a5568',
+  },
+  refreshButton: {
+    backgroundColor: '#5a67d8',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  refreshButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
 });
 
 export {styles};
