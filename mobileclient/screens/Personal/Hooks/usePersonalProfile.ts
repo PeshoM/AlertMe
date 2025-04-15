@@ -9,11 +9,13 @@ import {
   DELETE_COMBINATION,
   UPDATE_COMBINATION,
   TRIGGER_COMBINATION,
+  GET_FRIENDS_DATA,
 } from '@env';
 import {
   SavedSequence,
   Combination,
 } from '../../../interfaces/combination.interface';
+import {IUser} from '../../../interfaces/user.interface';
 
 const generateUniqueId = (): string =>
   `${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 10)}`;
@@ -22,8 +24,14 @@ const delay = (ms: number): Promise<void> =>
   new Promise(resolve => setTimeout(resolve, ms));
 
 const usePersonalProfile = () => {
-  const {authenticatedUser, combinations, setCombinations, combinationsRef} =
-    useContext(UserContext);
+  const {
+    authenticatedUser,
+    combinations,
+    setCombinations,
+    combinationsRef,
+    friends,
+    setFriends,
+  } = useContext(UserContext);
   const [serviceRunning, setServiceRunning] = useState(false);
   const [buttonSequence, setButtonSequence] = useState<string[]>([]);
   const [savedSequences, setSavedSequences] = useState<SavedSequence[]>([]);
@@ -38,6 +46,8 @@ const usePersonalProfile = () => {
   >(null);
 
   const sequenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const eventEmitterRef = useRef<NativeEventEmitter | null>(null);
+  const eventSubscriptionRef = useRef<{remove: () => void} | null>(null);
   const nameInputRef = useRef('');
   const messageInputRef = useRef('');
 
@@ -48,6 +58,60 @@ const usePersonalProfile = () => {
     combinations: `@combinations_${authenticatedUser?._id}`,
   };
 
+  const loadFriendsData = async () => {
+    try {
+
+      const friendsData = await AsyncStorage.getItem('friends_data');
+      if (friendsData) {
+        const parsedFriends = JSON.parse(friendsData);
+        if (Array.isArray(parsedFriends) && parsedFriends.length > 0) {
+          setFriends(parsedFriends);
+        }
+      }
+
+      const token = await AsyncStorage.getItem('auth_token');
+      if (!token || !authenticatedUser?._id) {
+        return;
+      }
+
+      const response = await fetch(`${SERVER_URL}${GET_FRIENDS_DATA}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          userId: authenticatedUser._id,
+        }),
+      });
+
+      if (!response.ok) {
+        return;
+      }
+
+      const data = await response.json();
+
+      if (data.friends && Array.isArray(data.friends)) {
+
+        const validFriends = data.friends.filter(
+          (friend: any) => friend && friend._id && friend.username,
+        );
+
+        if (validFriends.length > 0) {
+          setFriends(validFriends);
+          await AsyncStorage.setItem(
+            'friends_data',
+            JSON.stringify(validFriends),
+          );
+        }
+      } else if (authenticatedUser?.friends?.length > 0) {
+        
+      }
+    } catch (error) {
+      console.error('Error loading friends:', error);
+    }
+  };
+
   const openCombinationModal = (combinationToEdit?: Combination) => {
     if (combinationToEdit || !combinationModalVisible) {
       if (combinationToEdit) {
@@ -56,12 +120,12 @@ const usePersonalProfile = () => {
         setSelectedFriends([combinationToEdit.target]);
         loadSequence(combinationToEdit.sequence);
         setEditingCombinationId(combinationToEdit.id);
-      } else if (!combinationModalVisible) {
+      } else {
         nameInputRef.current = '';
         messageInputRef.current = '';
         setSelectedFriends([]);
         setEditingCombinationId(null);
-        if (!serviceRunning) clearSequence();
+        clearSequence();
       }
     }
     setCombinationModalVisible(true);
@@ -87,6 +151,14 @@ const usePersonalProfile = () => {
       return;
     }
 
+    if (buttonSequence.length < 3) {
+      Alert.alert(
+        'Error',
+        'Combination must have at least 3 button presses for security.',
+      );
+      return;
+    }
+
     if (selectedFriends.length === 0) {
       Alert.alert(
         'Error',
@@ -103,7 +175,9 @@ const usePersonalProfile = () => {
 
     if (result.success) {
       setCombinationModalVisible(false);
-      clearSequence();
+      if (!editingCombinationId) {
+        clearSequence();
+      }
       setSelectedFriends([]);
       setEditingCombinationId(null);
       Alert.alert('Success', result.message);
@@ -117,19 +191,85 @@ const usePersonalProfile = () => {
     if (result.success) setSaveModalVisible(false);
   };
 
-  const handleDeleteSequence = (id: string) => {
+  const showDeleteConfirmation = (
+    id: string,
+    type: 'sequence' | 'combination',
+  ) => {
     Alert.alert(
-      'Delete Sequence',
-      'Are you sure you want to delete this sequence?',
+      `Delete ${type === 'sequence' ? 'Sequence' : 'Combination'}`,
+      `Are you sure you want to delete this ${type}?`,
       [
         {text: 'Cancel', style: 'cancel'},
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => deleteSequence(id),
+          onPress: () => {
+            if (type === 'sequence') {
+              deleteSequence(id).then(result => {
+                if (result.success) {
+                  Alert.alert('Success', 'Sequence deleted successfully');
+                }
+              });
+            } else {
+              deleteCombination(id).then(success => {
+                if (success) {
+                  Alert.alert('Success', 'Combination deleted successfully');
+                } else {
+                  Alert.alert(
+                    'Error',
+                    'Failed to delete combination. Please try again.',
+                  );
+                }
+              });
+            }
+          },
         },
       ],
     );
+  };
+
+  const setupVolumeEventListener = () => {
+    if (Platform.OS !== 'android') return;
+
+    try {
+      const volumeModule = NativeModules.VolumeServiceModule;
+      if (!volumeModule) return null;
+
+      if (eventEmitterRef.current) {
+        eventEmitterRef.current.removeAllListeners('VolumeEvent');
+      }
+      if (eventSubscriptionRef.current) {
+        eventSubscriptionRef.current.remove();
+        eventSubscriptionRef.current = null;
+      }
+
+      eventEmitterRef.current = new NativeEventEmitter(volumeModule);
+
+      const subscription = eventEmitterRef.current.addListener(
+        'VolumeEvent',
+        event => {
+          if (!event?.action || event.action === 'serviceStarted') return;
+
+          try {
+            if (NativeModules.Vibration) NativeModules.Vibration.vibrate(50);
+            resetSequenceTimeout();
+
+            setButtonSequence(prev => {
+              const newSequence = [...prev, event.action];
+              
+              checkForMatchingCombinations(newSequence).catch(() => {});
+              return newSequence;
+            });
+          } catch (error) {
+          }
+        },
+      );
+
+      eventSubscriptionRef.current = subscription;
+      return subscription;
+    } catch (error) {
+      return null;
+    }
   };
 
   const resetSequenceTimeout = () => {
@@ -154,177 +294,218 @@ const usePersonalProfile = () => {
   const loadSequence = (sequence: string[]) => setButtonSequence(sequence);
 
   const loadSavedSequences = async () => {
-    const sequencesJson = await AsyncStorage.getItem(
-      storageKeys.sequences,
-    ).catch(() => null);
-    if (sequencesJson) setSavedSequences(JSON.parse(sequencesJson));
+    try {
+      const sequencesJson = await AsyncStorage.getItem(
+        storageKeys.sequences,
+      ).catch(() => null);
+      if (sequencesJson) setSavedSequences(JSON.parse(sequencesJson));
+    } catch (error) {
+    }
   };
 
   const saveSequencesToStorage = async (sequences: SavedSequence[]) => {
-    await AsyncStorage.setItem(
-      storageKeys.sequences,
-      JSON.stringify(sequences),
-    );
+    try {
+      await AsyncStorage.setItem(
+        storageKeys.sequences,
+        JSON.stringify(sequences),
+      );
+    } catch (error) {
+    }
   };
 
   const apiRequest = async (endpoint: string, data: any, method = 'POST') => {
-    const token = await AsyncStorage.getItem('auth_token');
-    if (!token || !authenticatedUser?._id) return null;
+    try {
+      const token = await AsyncStorage.getItem('auth_token');
+      if (!token || !authenticatedUser?._id) return null;
 
-    let url = endpoint;
-    if (!endpoint.startsWith('http')) {
-      url = `${SERVER_URL}${endpoint}`;
+      let url = endpoint;
+      if (!endpoint.startsWith('http')) {
+        url = `${SERVER_URL}${endpoint}`;
+      }
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+      return response.ok ? response : null;
+    } catch (error) {
+      return null;
     }
-
-    const response = await fetch(url, {
-      method,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-    return response.ok ? response : null;
   };
 
   const loadCombinations = async () => {
-    const token = await AsyncStorage.getItem('auth_token');
-    if (!token || !authenticatedUser?._id) return;
+    try {
+      const token = await AsyncStorage.getItem('auth_token');
+      if (!token || !authenticatedUser?._id) return;
 
-    const localData = await AsyncStorage.getItem(
-      storageKeys.combinations,
-    ).catch(() => null);
-    if (localData) {
-      const parsed = JSON.parse(localData);
-      setCombinations(parsed);
-      if (combinationsRef?.current) combinationsRef.current = parsed;
-    }
-
-    const response = await fetch(`${SERVER_URL}${GET_COMBINATIONS}`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({userId: authenticatedUser._id}),
-    });
-
-    if (!response.ok) return;
-
-    const data = await response.json();
-    if (data.combinations) {
-      const processed = data.combinations.map((c: Combination) => ({
-        ...c,
-        message: c.message || '',
-      }));
-
-      setCombinations(processed);
-      if (combinationsRef?.current) combinationsRef.current = processed;
-      await AsyncStorage.setItem(
+      const localData = await AsyncStorage.getItem(
         storageKeys.combinations,
-        JSON.stringify(processed),
-      );
-    } else {
-      setCombinations([]);
-      if (combinationsRef?.current) combinationsRef.current = [];
+      ).catch(() => null);
+      if (localData) {
+        const parsed = JSON.parse(localData);
+        setCombinations(parsed);
+        if (combinationsRef?.current) combinationsRef.current = parsed;
+      }
+
+      const response = await fetch(`${SERVER_URL}${GET_COMBINATIONS}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({userId: authenticatedUser._id}),
+      });
+
+      if (!response.ok) return;
+
+      const data = await response.json();
+      if (data.combinations) {
+        const processed = data.combinations.map((c: Combination) => ({
+          ...c,
+          message: c.message || '',
+        }));
+
+        setCombinations(processed);
+        if (combinationsRef?.current) combinationsRef.current = processed;
+        await AsyncStorage.setItem(
+          storageKeys.combinations,
+          JSON.stringify(processed),
+        );
+      } else {
+        setCombinations([]);
+        if (combinationsRef?.current) combinationsRef.current = [];
+      }
+    } catch (error) {
     }
-  };
-
-  const saveCombinationToServer = async (
-    combination: Combination,
-    isUpdate = false,
-  ) => {
-    const endpoint = isUpdate ? UPDATE_COMBINATION : ADD_COMBINATION;
-    const payload = {
-      userId: authenticatedUser?._id,
-      id: combination.id,
-      combinationId: combination.id,
-      name: combination.name,
-      target: combination.target,
-      sequence: combination.sequence,
-      message: combination.message || '',
-    };
-
-    const response = await apiRequest(endpoint, payload);
-    if (response) {
-      await loadCombinations();
-      return true;
-    }
-    return false;
-  };
-
-  const deleteCombination = async (combinationId: string) => {
-    const response = await apiRequest(DELETE_COMBINATION, {
-      userId: authenticatedUser?._id,
-      combinationId,
-    });
-
-    if (response) {
-      loadCombinations();
-      return true;
-    }
-    return false;
-  };
-
-  const updateByDeleteAndCreate = async (
-    combination: Combination,
-  ): Promise<boolean> => {
-    const deleteResult = await deleteCombination(combination.id);
-    if (!deleteResult) {
-      await delay(800);
-      return false;
-    }
-    const result = await saveCombinationToServer(combination, false);
-    await delay(800);
-    return result;
   };
 
   const checkForMatchingCombinations = async (sequence: string[]) => {
-    if (sequence.length < 3) return;
+    try {
+      if (sequence.length < 3) return;
 
-    const availableCombinations = combinationsRef?.current || [];
-    for (const combination of availableCombinations) {
-      if (combination.sequence.length > sequence.length) continue;
+      const availableCombinations = combinationsRef?.current || [];
+      for (const combination of availableCombinations) {
+        if (combination.sequence.length > sequence.length) continue;
 
-      const endOfSequence = sequence.slice(-combination.sequence.length);
-      const isMatch = combination.sequence.every(
-        (event: string, index: number) => event === endOfSequence[index],
-      );
+        const endOfSequence = sequence.slice(-combination.sequence.length);
+        const isMatch = combination.sequence.every(
+          (event: string, index: number) => event === endOfSequence[index],
+        );
 
-      if (isMatch) {
-        clearSequence();
-        await triggerCombinationOnServer(combination.id).catch(() => {});
-        break;
+        if (isMatch) {
+          clearSequence();
+          await triggerCombinationOnServer(combination.id);
+          break;
+        }
       }
+    } catch (error) {
     }
-  };
-
-  const triggerCombinationOnServer = async (combinationId: string) => {
-    const response = await apiRequest(TRIGGER_COMBINATION, {
-      userId: authenticatedUser?._id,
-      combinationId,
-    });
-    return !!response;
   };
 
   const toggleService = (start = true) => {
     if (Platform.OS !== 'android') return;
 
-    if (start) {
-      NativeCaller.startService();
-      setServiceRunning(true);
-      setPreserveSequence(false);
-      if (!preserveSequence) clearSequence();
-    } else {
+    try {
+      if (start) {
+        NativeCaller.startService();
+        setServiceRunning(true);
+        setPreserveSequence(false);
+        if (!preserveSequence) clearSequence();
+
+        setupVolumeEventListener();
+      } else {
+        setPreserveSequence(true);
+        NativeCaller.stopService();
+        setServiceRunning(false);
+        if (sequenceTimeoutRef.current) {
+          clearTimeout(sequenceTimeoutRef.current);
+          sequenceTimeoutRef.current = null;
+        }
+
+        if (eventSubscriptionRef.current) {
+          eventSubscriptionRef.current.remove();
+          eventSubscriptionRef.current = null;
+        }
+        if (eventEmitterRef.current) {
+          eventEmitterRef.current.removeAllListeners('VolumeEvent');
+        }
+      }
+    } catch (error) {
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (sequenceTimeoutRef.current) {
+        clearTimeout(sequenceTimeoutRef.current);
+        sequenceTimeoutRef.current = null;
+      }
+
+      if (eventSubscriptionRef.current) {
+        eventSubscriptionRef.current.remove();
+        eventSubscriptionRef.current = null;
+      }
+
+      if (eventEmitterRef.current) {
+        eventEmitterRef.current.removeAllListeners('VolumeEvent');
+        eventEmitterRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (authenticatedUser?._id) {
+      loadSavedSequences();
+      loadCombinations();
+      loadFriendsData();
+    }
+
+    return () => {
+      if (Platform.OS === 'android') {
+        try {
+          NativeCaller.stopService();
+          setServiceRunning(false);
+        } catch (error) {
+        }
+      }
+    };
+  }, [authenticatedUser?._id]);
+
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+
+    try {
+      if (!serviceRunning) toggleService(true);
+      const subscription = setupVolumeEventListener();
+
+      return () => {
+        if (subscription) {
+          subscription.remove();
+        }
+      };
+    } catch (error) {
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!serviceRunning) {
       setPreserveSequence(true);
-      NativeCaller.stopService();
-      setServiceRunning(false);
       if (sequenceTimeoutRef.current) {
         clearTimeout(sequenceTimeoutRef.current);
         sequenceTimeoutRef.current = null;
       }
     }
-  };
+  }, [serviceRunning]);
+
+  useEffect(() => {
+    if (!isSubmitting && preserveSequence && buttonSequence.length === 0) {
+      setPreserveSequence(false);
+    }
+  }, [isSubmitting, preserveSequence, buttonSequence]);
 
   const saveCombination = async (
     buttonSeq: string[],
@@ -335,6 +516,11 @@ const usePersonalProfile = () => {
 
     if (!buttonSeq.length)
       return {success: false, message: 'Button sequence cannot be empty'};
+    if (buttonSeq.length < 3)
+      return {
+        success: false,
+        message: 'Combination must have at least 3 button presses',
+      };
     if (!selectedTargets.length)
       return {success: false, message: 'You must select at least one friend'};
     if (!nameInputRef.current?.trim())
@@ -379,13 +565,15 @@ const usePersonalProfile = () => {
         };
 
         const result = await updateByDeleteAndCreate(updated);
-        clearSequence();
         nameInputRef.current = '';
         messageInputRef.current = '';
 
         if (result) {
           await loadCombinations();
           setIsSubmitting(false);
+          if (Platform.OS === 'android') {
+            toggleService(true);
+          }
           return {success: true, message: 'Combination updated successfully'};
         } else {
           setCombinations(
@@ -394,6 +582,9 @@ const usePersonalProfile = () => {
             ),
           );
           setIsSubmitting(false);
+          if (Platform.OS === 'android') {
+            toggleService(true);
+          }
           return {
             success: true,
             message:
@@ -427,6 +618,9 @@ const usePersonalProfile = () => {
       await delay(500);
       setPreserveSequence(false);
       setIsSubmitting(false);
+      if (Platform.OS === 'android') {
+        toggleService(true);
+      }
       return {success: true, message: 'Combination saved successfully'};
     } catch (error) {
       setIsSubmitting(false);
@@ -463,82 +657,74 @@ const usePersonalProfile = () => {
     return {success: true};
   };
 
-  useEffect(
-    () => () => {
-      if (sequenceTimeoutRef.current) clearTimeout(sequenceTimeoutRef.current);
-    },
-    [],
-  );
-
-  useEffect(() => {
-    if (authenticatedUser?._id) {
-      loadSavedSequences();
-      loadCombinations();
-    }
-
-    return () => {
-      if (Platform.OS === 'android') {
-        NativeCaller.stopService();
-        setServiceRunning(false);
-      }
+  const saveCombinationToServer = async (
+    combination: Combination,
+    isUpdate = false,
+  ) => {
+    const endpoint = isUpdate ? UPDATE_COMBINATION : ADD_COMBINATION;
+    const payload = {
+      userId: authenticatedUser?._id,
+      id: combination.id,
+      combinationId: combination.id,
+      name: combination.name,
+      target: combination.target,
+      sequence: combination.sequence,
+      message: combination.message || '',
     };
-  }, [authenticatedUser?._id]);
 
-  useEffect(() => {
-    if (Platform.OS !== 'android') return;
+    const response = await apiRequest(endpoint, payload);
+    if (response) {
+      await loadCombinations();
+      return true;
+    }
+    return false;
+  };
 
-    if (!serviceRunning) toggleService(true);
-
-    const volumeModule = NativeModules.VolumeServiceModule;
-    if (!volumeModule) return;
-
-    const eventEmitter = new NativeEventEmitter(volumeModule);
-    eventEmitter.removeAllListeners('VolumeEvent');
-
-    const subscription = eventEmitter.addListener('VolumeEvent', event => {
-      if (!event?.action || event.action === 'serviceStarted') return;
-
-      if (NativeModules.Vibration) NativeModules.Vibration.vibrate(50);
-      resetSequenceTimeout();
-
-      setButtonSequence(prev => {
-        const newSequence = [...prev, event.action];
-        checkForMatchingCombinations(newSequence);
-        return newSequence;
-      });
+  const deleteCombination = async (combinationId: string) => {
+    const response = await apiRequest(DELETE_COMBINATION, {
+      userId: authenticatedUser?._id,
+      combinationId,
     });
 
-    return () => {
-      subscription.remove();
-      if (sequenceTimeoutRef.current) clearTimeout(sequenceTimeoutRef.current);
-    };
-  }, []);
+    if (response) {
+      await loadCombinations();
 
-  useEffect(() => {
-    if (!serviceRunning) {
-      setPreserveSequence(true);
-      if (sequenceTimeoutRef.current) {
-        clearTimeout(sequenceTimeoutRef.current);
-        sequenceTimeoutRef.current = null;
+      if (Platform.OS === 'android') {
+        toggleService(true);
       }
-    }
-  }, [serviceRunning]);
 
-  useEffect(() => {
-    if (!isSubmitting && preserveSequence && buttonSequence.length === 0) {
-      setPreserveSequence(false);
+      return true;
     }
-  }, [isSubmitting, preserveSequence, buttonSequence]);
+    return false;
+  };
+
+  const updateByDeleteAndCreate = async (
+    combination: Combination,
+  ): Promise<boolean> => {
+    const deleteResult = await deleteCombination(combination.id);
+    if (!deleteResult) {
+      await delay(800);
+      return false;
+    }
+    const result = await saveCombinationToServer(combination, false);
+    await delay(800);
+    return result;
+  };
+
+  const triggerCombinationOnServer = async (combinationId: string) => {
+    const response = await apiRequest(TRIGGER_COMBINATION, {
+      userId: authenticatedUser?._id,
+      combinationId,
+    });
+    return !!response;
+  };
 
   return {
     serviceRunning,
     buttonSequence,
-    savedSequences,
     combinations,
     isSubmitting,
-    preserveSequence,
     combinationModalVisible,
-    setCombinationModalVisible,
     saveModalVisible,
     setSaveModalVisible,
     sequenceName,
@@ -553,14 +739,10 @@ const usePersonalProfile = () => {
     openSaveModal,
     handleSaveCombination,
     handleSaveSequence,
-    handleDeleteSequence,
+    showDeleteConfirmation,
     toggleService,
-    loadSequence,
     clearSequence,
-    saveCombination,
-    saveSequence,
-    deleteCombination,
-    deleteSequence,
+    friends,
   };
 };
 

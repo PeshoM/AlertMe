@@ -3,7 +3,6 @@
  */
 import {AppRegistry} from 'react-native';
 import messaging from '@react-native-firebase/messaging';
-import App from './App';
 import Application from './Application';
 import {name as appName} from './app.json';
 

@@ -220,6 +220,7 @@ const triggerCombination: AsyncRequestHandler = async (req, res) => {
   try {
     const { userId, combinationId } = req.body;
 
+    console.log("Triggering combination:", userId, combinationId);
     if (!userId || !combinationId) {
       return res.status(400).json({
         message: "User ID and combination ID are required",

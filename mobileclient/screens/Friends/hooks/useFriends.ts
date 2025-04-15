@@ -5,6 +5,7 @@ import {
   HANDLE_SEARCH,
   SEND_FRIEND_REQUEST,
 } from '@env';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {UserContext} from '../../../Context';
 import {IUser} from '../../../interfaces/user.interface';
 import {
@@ -53,19 +54,37 @@ const useFriends = () => {
   };
 
   const handleFetchFriends = async () => {
-    const fetchFriendsUrl: string = `${SERVER_URL}${GET_FRIENDS_DATA}`;
-    const response = await fetch(fetchFriendsUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        userId: authenticatedUser._id,
-      }),
-    }).then(res => res.json());
-    setFriends(response.friendsList);
-    setReceivedRequests(response.receivedFriendRequests);
-    setSentRequests(response.sentFriendRequests);
+    try {
+      const fetchFriendsUrl: string = `${SERVER_URL}${GET_FRIENDS_DATA}`;
+      const response = await fetch(fetchFriendsUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: authenticatedUser._id,
+        }),
+      }).then(res => res.json());
+
+      if (response.friendsList) {
+        setFriends(response.friendsList);
+
+        await AsyncStorage.setItem(
+          'friends_data',
+          JSON.stringify(response.friendsList),
+        );
+      }
+
+      if (response.receivedFriendRequests) {
+        setReceivedRequests(response.receivedFriendRequests);
+      }
+
+      if (response.sentFriendRequests) {
+        setSentRequests(response.sentFriendRequests);
+      }
+    } catch (error) {
+      console.error('Error in handleFetchFriends:', error);
+    }
   };
 
   useFocusEffect(
